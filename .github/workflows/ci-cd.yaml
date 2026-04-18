@@ -15,7 +15,8 @@ jobs:
       - name: YAML Linting
         uses: ibiqlik/action-yamllint@v3
         with:
-          file_or_dir: deploiement.yml
+          # On utilise le nom exact de ton fichier vu dans VS Code
+          file_or_dir: deploiement.yaml
 
       - name: Dockerfile Linting
         uses: hadolint/hadolint-action@v3.1.0
@@ -25,7 +26,7 @@ jobs:
       - name: Docker Image Build
         run: docker build -t mon-api-flask:latest .
 
-      - name: Trivy FS Scan
+      - name: Trivy FS Scan (SCA)
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
@@ -38,9 +39,10 @@ jobs:
         with:
           image-ref: 'mon-api-flask:latest'
           format: 'table'
-          exit-code: '1'
+          exit-code: '1' # Bloque le pipeline si des failles sont trouvées
           severity: 'CRITICAL,HIGH'
 
-      - name: Conftest
+      - name: Conftest (Policy as Code)
         if: always()
-        run: docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace openpolicyagent/conftest test k8s-deployment.yml -p policy/
+        # Correction du nom du fichier ici aussi
+        run: docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace openpolicyagent/conftest test deploiement.yaml -p policy/
