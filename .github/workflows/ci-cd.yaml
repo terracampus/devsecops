@@ -1,0 +1,66 @@
+name: Pipeline CI-CD Securisee
+
+# Le pipeline se lance a chaque "push" sur la branche principale
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-lint:
+    runs-on: ubuntu-latestname: Pipeline CI-CD Securisee
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-lint:
+
+
+    steps:
+      # 1. On recupere le code source de ton projet
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      # 2. Lint du fichier YAML (Kubernetes)
+      # Cela verifie que ton fichier deployment.yaml n'a pas d'erreurs de syntaxe
+      - name: Lint Kubernetes YAML
+        uses: stardog-union/kube-linter-action@v1
+        with:
+          directory: .
+
+      # 3. Lint du Dockerfile (Hadolint)
+      # Verifie que ton Dockerfile respecte les bonnes pratiques de securite
+      - name: Lint Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+
+      # 4. Build de l'image Docker
+      # C'est ici qu'on emballe ton API Flask dans une image
+      - name: Build Docker Image
+        run: |
+          docker build -t mon-api-flask:${{ github.sha }} .
+
+          # 5. Scan des dépendances (SCA)
+      # On regarde si les bibliothèques dans requirements.txt sont sûres
+      - name: Run Trivy FS scan (SCA)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+
+      # 6. Scan de l'image Docker
+      # On cherche des vulnérabilités dans l'image qu'on vient de construire
+      - name: Run Trivy Image scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'mon-api-flask:${{ github.sha }}'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
