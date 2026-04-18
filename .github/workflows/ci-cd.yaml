@@ -15,7 +15,7 @@ jobs:
       - name: YAML Linting
         uses: ibiqlik/action-yamllint@v3
         with:
-          file_or_dir: k8s-deployment.yml
+          file_or_dir: deploiement.yml
 
       - name: Dockerfile Linting
         uses: hadolint/hadolint-action@v3.1.0
